@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Sound FX</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #eee;
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .sound-btn {
+            aspect-ratio: 1;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(145deg, #2d2d44, #1f1f33);
+            box-shadow:
+                4px 4px 10px rgba(0,0,0,0.4),
+                -2px -2px 8px rgba(255,255,255,0.05);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+            padding: 12px;
+            overflow: hidden;
+        }
+
+        .sound-btn:active,
+        .sound-btn.playing {
+            transform: scale(0.95);
+            box-shadow:
+                2px 2px 5px rgba(0,0,0,0.4),
+                -1px -1px 4px rgba(255,255,255,0.05);
+            background: linear-gradient(145deg, #3d3d5c, #2a2a44);
+        }
+
+        .sound-btn.playing {
+            box-shadow:
+                0 0 20px rgba(99, 102, 241, 0.4),
+                2px 2px 5px rgba(0,0,0,0.4);
+        }
+
+        .sound-btn img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.15s ease;
+        }
+
+        .sound-btn.playing img {
+            transform: scale(1.05);
+        }
+
+        .sound-btn svg {
+            width: 64px;
+            height: 64px;
+            transition: transform 0.15s ease;
+        }
+
+        .sound-btn.playing svg {
+            transform: scale(1.05);
+        }
+
+        .sound-btn span {
+            font-size: 0.7rem;
+            color: #8888aa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        .sound-btn.playing span {
+            color: #a5b4fc;
+        }
+
+        @media (max-width: 360px) {
+            .grid {
+                gap: 12px;
+            }
+            .sound-btn img,
+            .sound-btn svg {
+                width: 52px;
+                height: 52px;
+            }
+            .sound-btn span {
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Sound FX</h1>
+    <div class="grid">
+        <button class="sound-btn" data-sound="yawn">
+            <img src="icons/yawn.png" alt="Yawn">
+            <span>Yawn</span>
+        </button>
+
+        <button class="sound-btn" data-sound="slow-clap">
+            <img src="icons/slow-clap.png" alt="Slow Clap">
+            <span>Slow Clap</span>
+        </button>
+
+        <button class="sound-btn" data-sound="rimshot">
+            <img src="icons/rimshot.png" alt="Rimshot">
+            <span>Rimshot</span>
+        </button>
+
+        <button class="sound-btn" data-sound="sad-violin">
+            <img src="icons/sad-violin.png" alt="Sad Violin">
+            <span>Sad Violin</span>
+        </button>
+
+        <button class="sound-btn" data-sound="crickets">
+            <img src="icons/crickets.png" alt="Crickets">
+            <span>Crickets</span>
+        </button>
+
+        <button class="sound-btn" data-sound="baby-crying">
+            <img src="icons/baby-crying.png" alt="Baby Crying">
+            <span>Baby Cry</span>
+        </button>
+    </div>
+
+    <script>
+        // Audio cache
+        const sounds = {};
+        const soundFiles = ['yawn', 'slow-clap', 'rimshot', 'sad-violin', 'crickets', 'baby-crying'];
+
+        // Preload all audio
+        soundFiles.forEach(name => {
+            sounds[name] = new Audio(`audio/${name}.mp3`);
+            sounds[name].preload = 'auto';
+        });
+
+        // Current playing sound
+        let currentSound = null;
+        let currentButton = null;
+
+        // Handle button clicks
+        document.querySelectorAll('.sound-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const soundName = btn.dataset.sound;
+                const audio = sounds[soundName];
+
+                // If same sound is playing, stop it
+                if (currentSound === audio && !audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    btn.classList.remove('playing');
+                    currentSound = null;
+                    currentButton = null;
+                    return;
+                }
+
+                // Stop any currently playing sound
+                if (currentSound) {
+                    currentSound.pause();
+                    currentSound.currentTime = 0;
+                    if (currentButton) {
+                        currentButton.classList.remove('playing');
+                    }
+                }
+
+                // Play new sound
+                audio.currentTime = 0;
+                audio.play();
+                btn.classList.add('playing');
+                currentSound = audio;
+                currentButton = btn;
+
+                // Remove playing class when done
+                audio.onended = () => {
+                    btn.classList.remove('playing');
+                    currentSound = null;
+                    currentButton = null;
+                };
+            });
+        });
+
+        // Register service worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed:', err));
+        }
+    </script>
+</body>
+</html>
